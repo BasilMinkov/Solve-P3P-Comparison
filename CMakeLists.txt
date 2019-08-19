@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 2.8)
+project( compareSloveP3P )
+find_package( OpenCV REQUIRED )
+include_directories( ${OpenCV_INCLUDE_DIRS} )
+add_executable( compareSloveP3P compareSloveP3P.cpp )
+target_link_libraries( compareSloveP3P ${OpenCV_LIBS} )
