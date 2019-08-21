@@ -1,7 +1,7 @@
 // Standard libraries.
 #include <iostream>
-#include <vector>
 #include <cmath>
+#include <vector>
 
 // Eigen main library.
 #include <Eigen/Dense>
@@ -17,78 +17,157 @@ using namespace Eigen;
 
 #define pi 3.14159265358979323846264338327950288
 
+
+/**
+    Computes a random value in a range.
+
+    @param min Lower border of a range.
+    @param max Upper border of a range.
+    @return A random integer in a given range.
+*/
 int RandNew(int min, int max){return rand() % max + min;} // Tada, I redefined this function, because did not manage to find it in your scripts.
 
-double angleBetweenColumnVectors(Matrix3d firstVector, Matrix3d secondVector) 
+
+/**
+    Computes the angle between two vectors.
+
+    @param firstVector
+    @param secondVector
+    @return Angle between vectors in degrees.
+*/
+double angleBetweenVectors(Vector3d firstVector, Vector3d secondVector) 
 {
-	return acos((firstVector.transpose() * secondVector) / (firstVector.norm() * secondVector.norm()));
+	return acos((firstVector.transpose() * secondVector / (firstVector.norm() * secondVector.norm()))(0));
 }
 
-double ComputeVisualAngles(Matrix3d vertexMatrix)
+
+/**
+    Computes the visual angles of a simulated triangle in a 3D scene. 
+    The visual angle of an object is the angle formed by rays 
+    projecting from the eye (0, 0, 0) to the sides of an object.
+
+    @param vertexMatrix Matrix of triangle vertexes (coordinateXYZ X vertexPointN) in 3D scene.
+    @return Vector of visual angles in degrees.
+*/
+Vector3d ComputeVisualAngles(Matrix3d vertexMatrix)
 {
+	Vector3d visualAngles;
 
-	for (int vertex = 0; vertex < vertexMatrix.rows() - 1; vertex++)
+	for (int vertex = 0; vertex < 3; vertex++)
+		{
+			int vertex1 = vertex;
+			int vertex2 = vertex + 1; 
+			if vertex2 > 2 {vertex2 = 0};
+			visualAngles(angle) = angleBetweenVectors(vertexMatrix.col(vertex1), vertexMatrix.col(vertex2));
+		}
+
+	return visualAngles;
+}
+
+
+/**
+    Computes the angles of a simulated triangle in a 3D scene.
+
+    @param vertexMatrix Matrix of triangle vertexes (coordinateXYZ X vertexPointN) in 3D scene.
+    @return Vector of angles of a simulated triangle.
+*/
+Vector2d ComputeSimulatedTriangleAngles(Matrix3d vertexMatrix)
+{
+	Vector2d simulatedTriangleAngles;
+
+	for (int vertex = 0; vertex < 2; vertex++) 
 	{
-		cout << angleBetweenColumnVectors(vertexMatrix.col(vertex), vertexMatrix.col(vertex+1)) << endl;
-
+		int vertex1 = vertex; int vertex2 = vertex + 1; int vertex3 = vertex + 2; if vertex3 > 2 {vertex3 = 0};
+		simulatedTriangleAngles() = angleBetweenVectors(vertexMatrix.col(vertex1)-vertexMatrix.col(vertex2), vertexMatrix.col(vertex2)-vertexMatrix.col(vertex3));
 	}
 
-	return 0;
+	return simulatedTriangleAngles;
 }
+
 
 int main()
 {
-	// Simulation consts.
-	int num_repeat = 10000;
-	int numPoints = 3;
-	int minZ = 1;
-	int maxZ = 1000;
+	// Set random seed.
+	int rseed = (unsigned int)time(0);
+	srand(rseed);
 
 	// Eigen output format constants. 
-	IOFormat CommaInitFmt(StreamPrecision, DontAlignCols, ", ", ", ", "", "", " << ", ";");
-	string SEP = "\n----------------------------------------\n";
+	IOFormat CommaInitFmt(StreamPrecision, DontAlignCols, ", ", "; ", "", "", " << ", ";"); // set the output format (vector [x1, x2, x3, x4] as "<< x1, x2, x3, x4;")
+	string SEP = "----------------------------------------\n"; // separator to be able to tell one output from another
+
+	// Simulation consts.
+	int NUM_REPEAT = 10;
+	int NUM_POINTS = 3;
+	int MIN_Z = 1;
+	int MAX_Z = 1000;
+	Matrix3d CAMERA_MATRIX; 
+	CAMERA_MATRIX << 1, 0, 0, 0, 1, 0, 0, 0, 1;
 
 	// Variables.
-	// double px[3], py[3], pz[3];
-	Matrix3d vertexMatrix; // vertexN X coordinates
-	Vector3d visualAngles; // A&B, B&C, and C&A
+	Matrix3d vertexMatrix; // matrix of triangle vertexes (coordinateXYZ X vertexPointN)
+	Vector3d visualAngles; // vector of visual angles A&B, B&C, and C&A
 
-	for (int trial = 0; trial < num_repeat; trial++)
+
+	// Initialase the comparison simulation loop. The aim is to obtain the statistics 
+	for (int trial = 0; trial < NUM_REPEAT; trial++)
 	{
-		int rseed = (unsigned int)time(0);
-		srand(rseed);
 
-		for (int p = 0; p < numPoints; p++)
-		{
-			vertexMatrix(p, 0) = RandNew(minZ, maxZ);
+		cout << "Trial #" << trial << endl << endl;
+		// int rseed = (unsigned int)time(0);
+		// srand(rseed);
 
+		// Generate vertex matrix in 3D space.
+		for (int p = 0; p < NUM_POINT; p++)
+		{	
+			// Generate Z coordinate. 
+			vertexMatrix(2, p) = RandNew(MIN_Z, MAX_Z); // Z
+
+			// Generate X and Y spherical coordinate based on Z. 
 			double eccentricity = RandNew(0, 85) * pi / 180.0;
 			double ori_xy = RandNew(0, 360) * pi / 180.0;
-			vertexMatrix(p, 1) = vertexMatrix(p, 0) * tan(eccentricity) * cos(ori_xy);
-			vertexMatrix(p, 2) = vertexMatrix(p, 0) * tan(eccentricity) * sin(ori_xy);
+			vertexMatrix(0, p) = vertexMatrix(2, p) * tan(eccentricity) * cos(ori_xy); // X
+			vertexMatrix(1, p) = vertexMatrix(2, p) * tan(eccentricity) * sin(ori_xy); // Y
 		}
 
+
+		// Compute input for three simulations.
+
+
 		//Input-A
+
 		//A1) Compute visual angles between A&B, B&C, and C&A
+		Vector3d visualAngles = ComputeVisualAngles(vertexMatrix);
+		cout << "Visual Angles:" << visualAngles.format(CommaInitFmt) << endl; 
+
 		//A2) Compute 2D image coordinates (camera matrix projecting a 3D scene to a 2D image plane)
+		MatrixXd imageCoordinates2d(2, 3); // matrix of triangle vertexes (coordinateXYZ X vertexPointN)
+		imageCoordinates2d << 0, 0, 0, 1, vertexMatrix(0, 2), vertexMatrix(1, 2);
+		cout << "Image Coordinates In 2D Space:" << imageCoordinates2d.format(CommaInitFmt) << endl; 
+
 
 		//Input-B
+
 		//B1) Shape of the simulated triangle in a 3D scene: 2 of 3 vertices of the triangles: [angle of vertex_A, angle of vertex_B]
+		Vector3d simulatedTriangleAngles = ComputeSimulatedTriangleAngles(vertexMatrix);
+		cout << "Simulated Triangle Angles:" << simulatedTriangleAngles.format(CommaInitFmt) << endl; 
+
 		//B2) Shape of the simulated trianlge in a 3D scene: 3D coordinates: (0,0,0), (0,1,0), (x3,y3,0)
+		MatrixXd imageCoordinates2d(2, 3); // matrix of triangle vertexes (coordinateXYZ X vertexPointN)
+		imageCoordinates2d << 0, 0, 0, 0, 1, 0, vertexMatrix(0, 2), vertexMatrix(1, 2), 0;
+		cout << "Image Coordinates In 3D Space:" << imageCoordinates2d.format(CommaInitFmt) << endl; 
+
+
+		// Compute simulations. 
 
 		//P3P_MinkovSawada: A1 and B1
 		//P3P_Banno: ? and ?
 		//P3P_OpenCV: A2 and B2
 
+		cout << SEP;
+
 	} // trial
 
-	cout << vertexMatrix << endl;
-
-	ComputeVisualAngles(vertexMatrix);
-
-	// cout << px.format(CommaInitFmt) << SEP;
-	// cout << py.format(CommaInitFmt) << SEP;
-	// cout << pz.format(CommaInitFmt) << SEP;
+	cout << "NOTE: For the case of matrix output, comma separates rows, while semicolon separates columns." << endl;
 
 	return 0;
 }
