@@ -12,6 +12,10 @@
 #include "opencv2/calib3d/calib3d.hpp"
 #include "opencv2/highgui/highgui.hpp"
 
+#include "P3P_MinkovSawada.h"
+#include "TdS_Math.h"
+
+
 using namespace std;
 using namespace Eigen;
 
@@ -55,10 +59,10 @@ Vector3d ComputeVisualAngles(Matrix3d vertexMatrix)
 
 	for (int vertex = 0; vertex < 3; vertex++)
 		{
-			int vertex1 = vertex;
+			int vertex1 = vertex; 
 			int vertex2 = vertex + 1; 
-			if vertex2 > 2 {vertex2 = 0};
-			visualAngles(angle) = angleBetweenVectors(vertexMatrix.col(vertex1), vertexMatrix.col(vertex2));
+			if (vertex2 > 2) {vertex2 = 0;}
+			visualAngles(vertex) = angleBetweenVectors(vertexMatrix.col(vertex1), vertexMatrix.col(vertex2));
 		}
 
 	return visualAngles;
@@ -77,8 +81,11 @@ Vector2d ComputeSimulatedTriangleAngles(Matrix3d vertexMatrix)
 
 	for (int vertex = 0; vertex < 2; vertex++) 
 	{
-		int vertex1 = vertex; int vertex2 = vertex + 1; int vertex3 = vertex + 2; if vertex3 > 2 {vertex3 = 0};
-		simulatedTriangleAngles() = angleBetweenVectors(vertexMatrix.col(vertex1)-vertexMatrix.col(vertex2), vertexMatrix.col(vertex2)-vertexMatrix.col(vertex3));
+		int vertex1 = vertex; 
+		int vertex2 = vertex + 1; 
+		int vertex3 = vertex + 2; 
+		if (vertex3 > 2) {vertex3 = 0;}
+		simulatedTriangleAngles(vertex) = angleBetweenVectors(vertexMatrix.col(vertex1)-vertexMatrix.col(vertex2), vertexMatrix.col(vertex2)-vertexMatrix.col(vertex3));
 	}
 
 	return simulatedTriangleAngles;
@@ -117,7 +124,7 @@ int main()
 		// srand(rseed);
 
 		// Generate vertex matrix in 3D space.
-		for (int p = 0; p < NUM_POINT; p++)
+		for (int p = 0; p < NUM_POINTS; p++)
 		{	
 			// Generate Z coordinate. 
 			vertexMatrix(2, p) = RandNew(MIN_Z, MAX_Z); // Z
@@ -129,9 +136,11 @@ int main()
 			vertexMatrix(1, p) = vertexMatrix(2, p) * tan(eccentricity) * sin(ori_xy); // Y
 		}
 
+		cout << "Vertex Matrix:" << vertexMatrix.format(CommaInitFmt) << endl; 
 
 		// Compute input for three simulations.
 
+		cout << "\nInput:\n\n";
 
 		//Input-A
 
@@ -148,20 +157,37 @@ int main()
 		//Input-B
 
 		//B1) Shape of the simulated triangle in a 3D scene: 2 of 3 vertices of the triangles: [angle of vertex_A, angle of vertex_B]
-		Vector3d simulatedTriangleAngles = ComputeSimulatedTriangleAngles(vertexMatrix);
+		Vector2d simulatedTriangleAngles = ComputeSimulatedTriangleAngles(vertexMatrix);
 		cout << "Simulated Triangle Angles:" << simulatedTriangleAngles.format(CommaInitFmt) << endl; 
 
 		//B2) Shape of the simulated trianlge in a 3D scene: 3D coordinates: (0,0,0), (0,1,0), (x3,y3,0)
-		MatrixXd imageCoordinates2d(2, 3); // matrix of triangle vertexes (coordinateXYZ X vertexPointN)
-		imageCoordinates2d << 0, 0, 0, 0, 1, 0, vertexMatrix(0, 2), vertexMatrix(1, 2), 0;
-		cout << "Image Coordinates In 3D Space:" << imageCoordinates2d.format(CommaInitFmt) << endl; 
+		MatrixXd imageCoordinates3d(3, 3); // matrix of triangle vertexes (coordinateXYZ X vertexPointN)
+		imageCoordinates3d << 0, 0, 0, 0, 1, 0, vertexMatrix(0, 2), vertexMatrix(1, 2), 0;
+		cout << "Image Coordinates In 3D Space:" << imageCoordinates3d.format(CommaInitFmt) << endl; 
 
 
 		// Compute simulations. 
 
+		cout << "\nOutput:\n\n";
+
 		//P3P_MinkovSawada: A1 and B1
+
+		double interpretations[10][3];
+		cout << "P3P_MinkovSawada: " << P3P_MinkovSawadaB(
+			simulatedTriangleAngles(0), 
+			simulatedTriangleAngles(1), 
+			visualAngles(0), 
+			visualAngles(1), 
+			visualAngles(2), 
+			interpretations
+			) << " sol." << endl; // Tada, why don't you define the last argument inside of the function? Is it for debuging 
+
 		//P3P_Banno: ? and ?
+
+
 		//P3P_OpenCV: A2 and B2
+
+
 
 		cout << SEP;
 

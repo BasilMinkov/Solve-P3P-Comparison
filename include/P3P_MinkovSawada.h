@@ -1,0 +1,2 @@
+int P3P_MinkovSawadaA(double angleA, double angleB, double angleAB, double angleBC, double angleCA, double(&interpretations)[10][3]);
+int P3P_MinkovSawadaB(double angleA, double angleB, double angleAB, double angleBC, double angleCA, double(&interpretations)[10][3]);
