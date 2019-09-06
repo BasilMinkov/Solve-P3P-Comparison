@@ -14,6 +14,7 @@ add_executable(
 	scr/TdS_Math/TdS_MathBasic.cpp 
 	scr/TdS_Math/poly34_tsC.cpp 
 	scr/P3P/P3P_MinkovSawada.cpp
+	scr/P3P/Groebner_P3P.cpp
 	)
 
 target_link_libraries( compareSloveP3P ${OpenCV_LIBS} Eigen3::Eigen )

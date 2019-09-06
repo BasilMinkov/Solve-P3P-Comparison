@@ -14,7 +14,7 @@
 
 #include "P3P_MinkovSawada.h"
 #include "TdS_Math.h"
-
+#include "Groebner_P3P.h"
 
 using namespace std;
 using namespace Eigen;
@@ -29,7 +29,7 @@ using namespace Eigen;
     @param max Upper border of a range.
     @return A random integer in a given range.
 */
-int RandNew(int min, int max){return rand() % max + min;} // Tada, I redefined this function, because did not manage to find it in your scripts.
+double RandNew(double vmin, double vmax){return (double)rand()*(vmax - vmin) / RAND_MAX + vmin;}
 
 
 /**
@@ -92,6 +92,118 @@ Vector2d ComputeSimulatedTriangleAngles(Matrix3d vertexMatrix)
 }
 
 
+/**
+    Foo
+
+    @param 
+    @return 
+*/
+vector<cv::Point2f> GenerateImagePoints(Matrix3d vertexMatrix)
+{
+	vector<cv::Point2f> points;
+
+	// Push the same points as in the vertex matrix.
+
+	// for (int vertex = 0; vertex < 3; vertex++)
+	// {
+	// 	points.push_back(cv::Point2f(
+	// 		vertexMatrix.col(vertex)(0), 
+	// 		vertexMatrix.col(vertex)(1))
+	// 	);
+	// }
+
+	// Push the points in discussed way.
+
+	points.push_back(cv::Point2f(0, 0));
+	points.push_back(cv::Point2f(0, 1));
+	points.push_back(cv::Point2f(vertexMatrix.col(2)(0), vertexMatrix.col(2)(1)));
+
+  return points;
+}
+
+
+/**
+    Foo
+
+    @param 
+    @return 
+*/
+vector<cv::Point3f> GenerateObjectPoints(Matrix3d vertexMatrix)
+{
+	vector<cv::Point3f> points;
+
+	// Push the same points as in the vertex matrix.
+ 
+	// for (int vertex = 0; vertex < 3; vertex++)
+	// {
+	// 	points.push_back(cv::Point3f(
+	// 		vertexMatrix.col(vertex)(0),
+	// 		vertexMatrix.col(vertex)(1),
+	// 		vertexMatrix.col(vertex)(2))
+	// 	);
+	// }
+
+	// Push the points in discussed way.
+
+	points.push_back(cv::Point3f(0, 0, 0));
+	points.push_back(cv::Point3f(0, 1, 0));
+	points.push_back(cv::Point3f(vertexMatrix.col(2)(0), vertexMatrix.col(2)(1), 0));
+  
+	return points;
+}
+
+
+void printImagePoints(vector<cv::Point2f> vector)
+{
+	cout << "Image Coordinates In 2D Space (coordinateXY X vertexPointN): << ";
+
+	for (int i=0; i<vector.size(); i++)
+	{
+		cout << vector[i].x << ", " << vector[i].y << "; ";
+	}
+	cout << endl;
+}
+
+
+void printObjectPoints(vector<cv::Point3f> vector)
+{
+	cout << "Object Coordinates In 3D Space (coordinateXYZ X vertexPointN): << ";
+
+	for (int i=0; i<vector.size(); i++)
+	{
+		cout << vector[i].x << ", " << vector[i].y << ", " << vector[i].z << "; ";
+	}
+	cout << endl;
+}
+
+
+void P3P_OpenCV(vector<cv::Point2f> imagePoints, vector<cv::Point3f> objectPoints)
+{
+
+	cv::Mat cameraMatrix(3, 3, cv::DataType<double>::type); // set camera matrix
+	cv::setIdentity(cameraMatrix); 
+
+	cv::Mat distCoeffs(4, 1, cv::DataType<double>::type); // set distortion coeffs
+	distCoeffs.at<double>(0) = 0;
+	distCoeffs.at<double>(1) = 0;
+	distCoeffs.at<double>(2) = 0;
+	distCoeffs.at<double>(3) = 0;
+
+	cv::Mat rvec(3,1,cv::DataType<double>::type);
+	cv::Mat tvec(3,1,cv::DataType<double>::type);
+
+	cv::solvePnP(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec, "SOLVEPNP_ITERATIVE");
+
+	std::vector<cv::Point2f> projectedPoints;
+	cv::projectPoints(objectPoints, rvec, tvec, cameraMatrix, distCoeffs, projectedPoints);
+ 
+	for(unsigned int i = 0; i < projectedPoints.size(); ++i)
+	{
+		std::cout << "	Image point: " << imagePoints[i] << " Projected to " << projectedPoints[i] << std::endl;
+	}
+}
+
+
 int main()
 {
 	// Set random seed.
@@ -107,8 +219,6 @@ int main()
 	int NUM_POINTS = 3;
 	int MIN_Z = 1;
 	int MAX_Z = 1000;
-	Matrix3d CAMERA_MATRIX; 
-	CAMERA_MATRIX << 1, 0, 0, 0, 1, 0, 0, 0, 1;
 
 	// Variables.
 	Matrix3d vertexMatrix; // matrix of triangle vertexes (coordinateXYZ X vertexPointN)
@@ -136,7 +246,7 @@ int main()
 			vertexMatrix(1, p) = vertexMatrix(2, p) * tan(eccentricity) * sin(ori_xy); // Y
 		}
 
-		cout << "Vertex Matrix:" << vertexMatrix.format(CommaInitFmt) << endl; 
+		cout << "Vertex Matrix (coordinateXYZ X vertexPointN):" << vertexMatrix.format(CommaInitFmt) << endl; 
 
 		// Compute input for three simulations.
 
@@ -149,9 +259,8 @@ int main()
 		cout << "Visual Angles:" << visualAngles.format(CommaInitFmt) << endl; 
 
 		//A2) Compute 2D image coordinates (camera matrix projecting a 3D scene to a 2D image plane)
-		MatrixXd imageCoordinates2d(2, 3); // matrix of triangle vertexes (coordinateXYZ X vertexPointN)
-		imageCoordinates2d << 0, 0, 0, 1, vertexMatrix(0, 2), vertexMatrix(1, 2);
-		cout << "Image Coordinates In 2D Space:" << imageCoordinates2d.format(CommaInitFmt) << endl; 
+  		vector<cv::Point2f> imagePoints = GenerateImagePoints(vertexMatrix); // matrix of triangle vertexes (coordinateXYZ X vertexPointN)
+  		printImagePoints(imagePoints);
 
 
 		//Input-B
@@ -161,10 +270,8 @@ int main()
 		cout << "Simulated Triangle Angles:" << simulatedTriangleAngles.format(CommaInitFmt) << endl; 
 
 		//B2) Shape of the simulated trianlge in a 3D scene: 3D coordinates: (0,0,0), (0,1,0), (x3,y3,0)
-		MatrixXd imageCoordinates3d(3, 3); // matrix of triangle vertexes (coordinateXYZ X vertexPointN)
-		imageCoordinates3d << 0, 0, 0, 0, 1, 0, vertexMatrix(0, 2), vertexMatrix(1, 2), 0;
-		cout << "Image Coordinates In 3D Space:" << imageCoordinates3d.format(CommaInitFmt) << endl; 
-
+  		std::vector<cv::Point3f> objectPoints = GenerateObjectPoints(vertexMatrix); // matrix of triangle vertexes (coordinateXYZ X vertexPointN)
+  		printObjectPoints(objectPoints);
 
 		// Compute simulations. 
 
@@ -184,10 +291,12 @@ int main()
 
 		//P3P_Banno: ? and ?
 
+		CGroebner::CalculatePosition()
+
 
 		//P3P_OpenCV: A2 and B2
-
-
+		cout << "P3P_OpenCV:" << endl;
+		P3P_OpenCV(imagePoints,objectPoints);
 
 		cout << SEP;
 

@@ -1,0 +1,3 @@
+/Users/wassilyminkow/Scripts/C++/P3P/build/CMakeFiles/rebuild_cache.dir
+/Users/wassilyminkow/Scripts/C++/P3P/build/CMakeFiles/edit_cache.dir
+/Users/wassilyminkow/Scripts/C++/P3P/build/CMakeFiles/compareSloveP3P.dir
