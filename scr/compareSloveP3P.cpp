@@ -291,7 +291,7 @@ int main()
 
 		//P3P_Banno: ? and ?
 
-		CGroebner::CalculatePosition()
+		// CGroebner::CalculatePosition()
 
 
 		//P3P_OpenCV: A2 and B2
