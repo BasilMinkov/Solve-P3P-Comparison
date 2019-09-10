@@ -192,11 +192,14 @@ void P3P_OpenCV(vector<cv::Point2f> imagePoints, vector<cv::Point3f> objectPoint
 	cv::Mat rvec(3,1,cv::DataType<double>::type);
 	cv::Mat tvec(3,1,cv::DataType<double>::type);
 
-	cv::solvePnP(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec, "SOLVEPNP_ITERATIVE");
+	cv::solvePnP(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec, "CV_P3P");
 
 	std::vector<cv::Point2f> projectedPoints;
 	cv::projectPoints(objectPoints, rvec, tvec, cameraMatrix, distCoeffs, projectedPoints);
  
+	std::cout << "	rvec: " << rvec << std::endl;
+	std::cout << "	tvec: " << tvec << std::endl;
+
 	for(unsigned int i = 0; i < projectedPoints.size(); ++i)
 	{
 		std::cout << "	Image point: " << imagePoints[i] << " Projected to " << projectedPoints[i] << std::endl;
@@ -206,6 +209,7 @@ void P3P_OpenCV(vector<cv::Point2f> imagePoints, vector<cv::Point3f> objectPoint
 
 int main()
 {
+
 	// Set random seed.
 	int rseed = (unsigned int)time(0);
 	srand(rseed);
